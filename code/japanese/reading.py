@@ -276,7 +276,6 @@ def regenerateReading(n, src):
 # Custom Hook
 ##########################################################################
 
-iteration = 0
 
 def onLoadNote(n):
     print(n)
@@ -307,7 +306,6 @@ def onLoadNote(n):
     if 'subs2srs' in n.tags and not n['isSentence']:
         n[dst] = ""
         n['isSentence'] = 'yes'
-        return
     # dst field already filled?
     if n[dst]:
         return
