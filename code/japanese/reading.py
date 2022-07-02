@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 
+from anki import hooks
 from anki.hooks import addHook
 from anki.utils import is_mac, is_win, strip_html
 from aqt import mw
@@ -270,6 +271,59 @@ def regenerateReading(n, src):
         mecab = None
         raise
     return True
+
+
+# Custom Hook
+##########################################################################
+
+iteration = 0
+
+def onLoadNote(n):
+    print(n)
+    global mecab
+    if not mecab:
+        return
+    src = None
+    dst = None
+    # japanese model?
+    if not isJapaneseNoteType(n.model()['name']):
+        return
+    # have src and dst fields?
+    fields = mw.col.models.fieldNames(n.model())
+    for field in srcFields:
+        if field in fields:
+            src = field
+            break
+    for field in dstFields:
+        if field in fields:
+            dst = field
+            break
+    if not src or not dst:
+        return
+    # dst field exists?
+    if dst not in n:
+        return
+    # if subs2srs then clear destination field
+    if 'subs2srs' in n.tags and not n['isSentence']:
+        n[dst] = ""
+        n['isSentence'] = 'yes'
+        return
+    # dst field already filled?
+    if n[dst]:
+        return
+    # grab source text
+    srcTxt = mw.col.media.strip(n[src])
+    if not srcTxt:
+        return
+    # update field
+    try:
+        n[dst] = mecab.reading(srcTxt)
+    except Exception as e:
+        mecab = None
+        raise
+
+
+hooks.note_will_flush.append(onLoadNote)
 
 
 # Init
